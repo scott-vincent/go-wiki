@@ -1,5 +1,21 @@
-<h1>Scott's Wiki</h1>
+<div style="margin-top: 20px; margin-left: 20px">
 
-<p>[<a href="/edit/TestPage">TestPage</a>]</p>
+    <h1>Scott's Wiki</h1>
 
-<p>[<a href="/edit/newPage">+</a>]</p>
+    <h3>Contents</h3>
+
+    <div style="margin-left: 20px">
+        {{range .}}
+            <div class="item">
+                <p>[<a href="/edit/TestPage">{{.}}</a>]</p>
+            </div>
+        {{end}}
+    </div>
+
+    <div style="margin-top: 30px"></div>
+
+    <h3>New Page</h3>
+
+    <p>[<a href="/edit/newPage">+</a>]</p>
+
+</div>
