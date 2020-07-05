@@ -2,20 +2,20 @@
 
     <h1>Scott's Wiki</h1>
 
-    <h3>Contents</h3>
+    <div style="float: left">
+        <h3>Contents</h3>
+    </div>
 
-    <div style="margin-left: 20px">
+    <div style="float: left; margin-left: 10px">
+        <p>[<a href="/edit">+</a>]</p>
+    </div>
+
+    <div style="clear: both; margin-left: 20px">
         {{range .}}
-            <div class="item">
-                <p>[<a href="/edit/TestPage">{{.}}</a>]</p>
+            <div>
+                <p>[<a href="/view/{{.}}">{{.}}</a>]</p>
             </div>
         {{end}}
     </div>
-
-    <div style="margin-top: 30px"></div>
-
-    <h3>New Page</h3>
-
-    <p>[<a href="/edit/newPage">+</a>]</p>
-
+    
 </div>

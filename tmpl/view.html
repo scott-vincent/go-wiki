@@ -1,5 +1,17 @@
-<h1>{{.Title}}</h1>
+<div style="margin-top: 20px; margin-left: 20px">
 
-<p>[<a href="/edit/{{.Title}}">edit</a>]</p>
+    <div style="margin-bottom: -20px">
+        <h1>{{.Title}}</h1>
+    </div>
 
-<div>{{printf "%s" .Body}}</div>
+    <div style="display: inline-block">
+        <p>[<a href="/">home</a>]</p>
+    </div>
+
+    <div style="display: inline-block">
+        <p>[<a href="/edit/{{.Title}}">edit</a>]</p>
+    </div>
+
+    <div>{{printf "%s" .Body}}</div>
+
+</div>

@@ -4,25 +4,17 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"regexp"
+	"strings"
 
 	"github.com/scott-vincent/go-wiki/page"
 )
 
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
-var templates = template.Must(template.ParseFiles("tmpl/home.html", "tmpl/edit.html", "tmpl/view.html"))
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	// Find all existing pages
-	var titles [2]string
-	titles[0] = "First page"
-	titles[1] = "Second page"
-
-	err := templates.ExecuteTemplate(w, "home.html", titles)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
+var templates = template.Must(template.ParseFiles(
+	"tmpl/home.html",
+	"tmpl/missingPage.html",
+	"tmpl/edit.html",
+	"tmpl/view.html",
+))
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *page.Page) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
@@ -31,18 +23,26 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *page.Page) {
 	}
 }
 
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[2])
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		renderTemplate(w, "missingPage", nil)
+		return
+	}
+
+	// Find all existing pages
+	err := templates.ExecuteTemplate(w, "home.html", page.GetTitles())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/view/"):]
+	if title == "" {
+		renderTemplate(w, "missingPage", nil)
+		return
+	}
+
 	p, err := page.Load(title)
 	if err != nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
@@ -52,7 +52,8 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 	renderTemplate(w, "view", p)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
+func editHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/edit/"):]
 	p, err := page.Load(title)
 	if err != nil {
 		p = &page.Page{Title: title}
@@ -61,24 +62,53 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 	renderTemplate(w, "edit", p)
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	oldTitle := r.URL.Path[len("/save/"):]
+	newTitle := strings.TrimSpace(r.FormValue("title"))
 	body := r.FormValue("body")
-	p := &page.Page{Title: title, Body: []byte(body)}
 
+	if newTitle == "" {
+		p := &page.Page{Body: []byte(body), Error: "Page must have a title"}
+		renderTemplate(w, "edit", p)
+		return
+	}
+
+	// If page title has changed, make sure it is valid
+	if newTitle != oldTitle {
+		err := page.ValidateNewPage(newTitle)
+		if err != nil {
+			// Redisplay the edit page and show the error
+			p := &page.Page{Title: oldTitle, Body: []byte(body), Error: err.Error()}
+			renderTemplate(w, "edit", p)
+			return
+		}
+
+		// Delete the old page
+		page.Delete(oldTitle)
+	}
+
+	p := &page.Page{Title: newTitle, Body: []byte(body)}
 	err := p.Save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+	http.Redirect(w, r, "/view/"+newTitle, http.StatusFound)
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/delete/"):]
+	page.Delete(title)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func main() {
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/view/", makeHandler(viewHandler))
-	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/save/", makeHandler(saveHandler))
+	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/", saveHandler)
+	http.HandleFunc("/delete/", deleteHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -1,6 +1,32 @@
-<h1>Editing {{.Title}}</h1>
+<div style="margin-top: 20px; margin-left: 20px">
 
-<form action="/save/{{.Title}}" method="POST">
-<div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
-<div><input type="submit" value="Save"></div>
-</form>
+    <form action="/save/{{.Title}}" method="POST">
+        <div style="display: flex">
+            <h1 style="float: left">Editing</h1>
+            <input
+                style="float: left; margin: 15px; font-size: 2em; font-weight: bolder; size: 1em"
+                type=text
+                name=title
+                value="{{.Title}}"
+                placeholder="New Page" />
+        </div>
+
+        <div style="clear: both"></div>
+
+        <div style="display: inline-block">
+            <p>[<a href="/delete/{{.Title}}">delete</a>]</p>
+        </div>
+
+        <div style="display: inline-block">
+            <p>[<a href="/">cancel</a>]</p>
+        </div>
+
+        <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
+
+        <div>
+            <input type="submit" value="Save" style="float: left">
+            <div style="float: left; margin-left: 10px; color: red">{{.Error}}</div>
+        </div>
+    </form>
+
+</div>
